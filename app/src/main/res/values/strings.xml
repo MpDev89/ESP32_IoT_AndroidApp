@@ -1,0 +1,20 @@
+<resources>
+    <string name="app_name">ESP32_IoT_AndroidApp</string>
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="nav_header_title">Android Studio</string>
+    <string name="nav_header_subtitle">android.studio@android.com</string>
+    <string name="nav_header_desc">Navigation header</string>
+    <string name="action_settings">Settings</string>
+    <string name="menu_home">Home</string>
+    <string name="menu_measure">Measure</string>
+    <string name="menu_scanner">Scanner</string>
+    <string name="humidity_perc">100%</string>
+    <string name="measure_static_text_sensor_val">0</string>
+    <string name="solar_luminosity">sensor</string>
+    <string name="str_solar_intensity_value">OFF</string>
+    <string name="str_value_temp">0 °C</string>
+    <string name="str_static_info">Info:</string>
+    <string name="str_init_info">Click on device to connect</string>
+    <string name="sw_disconnect_device">Disconnect Device:  </string>
+</resources>

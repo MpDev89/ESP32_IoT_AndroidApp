@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ui.measure.MeasureFragment">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/linearLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            app:layout_constraintBottom_toTopOf="@+id/imageButton3"
+            app:layout_constraintTop_toTopOf="@+id/imageButton3">
+
+
+            <TextView
+                android:id="@+id/TV_status"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_marginTop="32dp"
+                android:text="Connection status:"
+                android:textSize="20sp"
+                app:layout_constraintBottom_toTopOf="@+id/IV_temperature"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintVertical_bias="0.5" />
+
+            <TextView
+                android:id="@+id/TV_status_result"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="8dp"
+                android:text=""
+                android:textAlignment="center"
+                android:textSize="18sp"
+                app:layout_constraintBaseline_toBaselineOf="@+id/TV_status"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@+id/TV_status" />
+
+
+            <ImageView
+                android:id="@+id/IV_temperature"
+                android:layout_width="160dp"
+                android:layout_height="150dp"
+                android:layout_marginStart="32dp"
+                android:layout_marginTop="50dp"
+                android:src="@drawable/temperature"
+                app:layout_constraintEnd_toStartOf="@+id/TV_temperature_value"
+                app:layout_constraintHorizontal_bias="0.5"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/TV_status" />
+
+            <TextView
+                android:id="@+id/TV_temperature_value"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="90dp"
+                android:text="@string/str_value_temp"
+                android:textAlignment="center"
+                android:textColor="@color/purple_500"
+                android:textSize="32sp"
+                android:textStyle="bold"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.5"
+                app:layout_constraintStart_toEndOf="@+id/IV_temperature"
+                app:layout_constraintTop_toBottomOf="@+id/TV_status_result" />
+
+            <ImageView
+                android:id="@+id/IV_humidity"
+                android:layout_width="160dp"
+                android:layout_height="150dp"
+                android:layout_marginStart="32dp"
+                android:layout_marginTop="32dp"
+                android:src="@drawable/humidity"
+                app:layout_constraintEnd_toStartOf="@+id/TV_humidity_value"
+                app:layout_constraintHorizontal_bias="0.5"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/IV_temperature" />
+
+            <TextView
+                android:id="@+id/TV_humidity_value"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="95dp"
+                android:text="@string/humidity_perc"
+                android:textAlignment="center"
+                android:textColor="@color/purple_500"
+                android:textSize="32sp"
+                android:textStyle="bold"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.5"
+                app:layout_constraintStart_toEndOf="@+id/IV_humidity"
+                app:layout_constraintTop_toBottomOf="@+id/IV_temperature"/>
+
+            <ImageView
+                android:id="@+id/IV_luminosity"
+                android:layout_width="160dp"
+                android:layout_height="150dp"
+                android:layout_marginStart="32dp"
+                android:layout_marginTop="32dp"
+                android:src="@drawable/bulboff"
+                app:layout_constraintEnd_toStartOf="@+id/TV_luminosity_value"
+                app:layout_constraintHorizontal_bias="0.5"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/IV_humidity" />
+
+            <TextView
+                android:id="@+id/TV_luminosity_value"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="90dp"
+                android:text="@string/str_solar_intensity_value"
+                android:textAlignment="center"
+                android:textColor="@color/purple_500"
+                android:textSize="32sp"
+                android:textStyle="bold"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.5"
+                app:layout_constraintStart_toEndOf="@+id/IV_luminosity"
+                app:layout_constraintTop_toBottomOf="@+id/IV_humidity"/>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </ScrollView>
+</androidx.constraintlayout.widget.ConstraintLayout>
