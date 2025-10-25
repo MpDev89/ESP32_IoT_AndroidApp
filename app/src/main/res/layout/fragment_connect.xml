@@ -4,10 +4,10 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".ui.scanner.ScannerFragment">
+    tools:context=".ui.connect.ConnectFragment">
 
     <TextView
-        android:id="@+id/TV_scanner_info"
+        android:id="@+id/tv_scanner_info"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
@@ -16,11 +16,11 @@
         android:textSize="18sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintStart_toEndOf="@+id/TV_info"
+        app:layout_constraintStart_toEndOf="@+id/tv_info"
         app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
-        android:id="@+id/TV_info"
+        android:id="@+id/tv_info"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="24dp"
@@ -29,40 +29,39 @@
         android:text="@string/str_static_info"
         android:textAlignment="center"
         android:textSize="18sp"
-        app:layout_constraintEnd_toStartOf="@+id/TV_scanner_info"
+        app:layout_constraintEnd_toStartOf="@+id/tv_scanner_info"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-
-    <Switch
-        android:id="@+id/SW_ble_disconn"
+    <Button
+        android:id="@+id/bt_ble_disconn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="24dp"
-        android:layout_marginTop="16dp"
-        android:text="@string/sw_disconnect_device"
+        android:layout_marginTop="32dp"
+        android:text="@string/bt_disconnect_device"
+        android:textAllCaps="false"
+        android:textColor="@color/black"
         android:textSize="20dp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/TV_scanner_info"
-        tools:ignore="SpUsage,UseSwitchCompatOrMaterialXml" />
+        app:layout_constraintTop_toBottomOf="@+id/tv_scanner_info" />
+
 
     <LinearLayout
-        android:id="@+id/LL_BLEDevicesList"
+        android:id="@+id/ll_ble_devices_list"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginTop="100dp"
+        android:layout_marginTop="150dp"
         android:orientation="vertical"
         android:padding="16dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/SW_ble_disconn">
+        app:layout_constraintTop_toBottomOf="@+id/bt_ble_disconn">
 
         <ListView
-            android:id="@+id/LV_BLEDevicesList"
+            android:id="@+id/lv_ble_devices_list"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 

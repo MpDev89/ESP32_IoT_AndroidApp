@@ -28,6 +28,7 @@ public class MainActivity extends AppCompatActivity {
     private static int BLE_PERMISSIONS_REQUEST_CODE = 0x55; // Could be any other positive integer value
     private int permissionsCount;
     public static String BleDeviceAddress = "NA";
+    public static String BleDeviceName = "NA";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

@@ -20,20 +20,20 @@
 
 
             <TextView
-                android:id="@+id/TV_status"
+                android:id="@+id/tv_status"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:layout_marginTop="32dp"
                 android:text="Connection status:"
                 android:textSize="20sp"
-                app:layout_constraintBottom_toTopOf="@+id/IV_temperature"
+                app:layout_constraintBottom_toTopOf="@+id/iv_temperature"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintVertical_bias="0.5" />
 
             <TextView
-                android:id="@+id/TV_status_result"
+                android:id="@+id/tv_status_result"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
@@ -41,25 +41,25 @@
                 android:text=""
                 android:textAlignment="center"
                 android:textSize="18sp"
-                app:layout_constraintBaseline_toBaselineOf="@+id/TV_status"
+                app:layout_constraintBaseline_toBaselineOf="@+id/tv_status"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toEndOf="@+id/TV_status" />
+                app:layout_constraintStart_toEndOf="@+id/tv_status" />
 
 
             <ImageView
-                android:id="@+id/IV_temperature"
+                android:id="@+id/iv_temperature"
                 android:layout_width="160dp"
                 android:layout_height="150dp"
                 android:layout_marginStart="32dp"
                 android:layout_marginTop="50dp"
                 android:src="@drawable/temperature"
-                app:layout_constraintEnd_toStartOf="@+id/TV_temperature_value"
+                app:layout_constraintEnd_toStartOf="@+id/tv_temperature_value"
                 app:layout_constraintHorizontal_bias="0.5"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/TV_status" />
+                app:layout_constraintTop_toBottomOf="@+id/tv_status" />
 
             <TextView
-                android:id="@+id/TV_temperature_value"
+                android:id="@+id/tv_temperature_value"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="90dp"
@@ -70,23 +70,23 @@
                 android:textStyle="bold"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintHorizontal_bias="0.5"
-                app:layout_constraintStart_toEndOf="@+id/IV_temperature"
-                app:layout_constraintTop_toBottomOf="@+id/TV_status_result" />
+                app:layout_constraintStart_toEndOf="@+id/iv_temperature"
+                app:layout_constraintTop_toBottomOf="@+id/tv_status_result" />
 
             <ImageView
-                android:id="@+id/IV_humidity"
+                android:id="@+id/iv_humidity"
                 android:layout_width="160dp"
                 android:layout_height="150dp"
                 android:layout_marginStart="32dp"
                 android:layout_marginTop="32dp"
                 android:src="@drawable/humidity"
-                app:layout_constraintEnd_toStartOf="@+id/TV_humidity_value"
+                app:layout_constraintEnd_toStartOf="@+id/tv_humidity_value"
                 app:layout_constraintHorizontal_bias="0.5"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/IV_temperature" />
+                app:layout_constraintTop_toBottomOf="@+id/iv_temperature" />
 
             <TextView
-                android:id="@+id/TV_humidity_value"
+                android:id="@+id/tv_humidity_value"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="95dp"
@@ -97,23 +97,23 @@
                 android:textStyle="bold"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintHorizontal_bias="0.5"
-                app:layout_constraintStart_toEndOf="@+id/IV_humidity"
-                app:layout_constraintTop_toBottomOf="@+id/IV_temperature"/>
+                app:layout_constraintStart_toEndOf="@+id/iv_humidity"
+                app:layout_constraintTop_toBottomOf="@+id/iv_temperature"/>
 
             <ImageView
-                android:id="@+id/IV_luminosity"
+                android:id="@+id/iv_luminosity"
                 android:layout_width="160dp"
                 android:layout_height="150dp"
                 android:layout_marginStart="32dp"
                 android:layout_marginTop="32dp"
                 android:src="@drawable/bulboff"
-                app:layout_constraintEnd_toStartOf="@+id/TV_luminosity_value"
+                app:layout_constraintEnd_toStartOf="@+id/tv_luminosity_value"
                 app:layout_constraintHorizontal_bias="0.5"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/IV_humidity" />
+                app:layout_constraintTop_toBottomOf="@+id/iv_humidity" />
 
             <TextView
-                android:id="@+id/TV_luminosity_value"
+                android:id="@+id/tv_luminosity_value"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="90dp"
@@ -124,8 +124,8 @@
                 android:textStyle="bold"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintHorizontal_bias="0.5"
-                app:layout_constraintStart_toEndOf="@+id/IV_luminosity"
-                app:layout_constraintTop_toBottomOf="@+id/IV_humidity"/>
+                app:layout_constraintStart_toEndOf="@+id/iv_luminosity"
+                app:layout_constraintTop_toBottomOf="@+id/iv_humidity"/>
 
         </androidx.constraintlayout.widget.ConstraintLayout>
     </ScrollView>

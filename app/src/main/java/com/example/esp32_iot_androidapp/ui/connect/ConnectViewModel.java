@@ -1,14 +1,14 @@
-package com.example.esp32_iot_androidapp.ui.scanner;
+package com.example.esp32_iot_androidapp.ui.connect;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
-public class ScannerViewModel extends ViewModel {
+public class ConnectViewModel extends ViewModel {
 
     private final MutableLiveData<String> mText;
 
-    public ScannerViewModel() {
+    public ConnectViewModel() {
         mText = new MutableLiveData<>();
         mText.setValue("This is slideshow fragment");
     }

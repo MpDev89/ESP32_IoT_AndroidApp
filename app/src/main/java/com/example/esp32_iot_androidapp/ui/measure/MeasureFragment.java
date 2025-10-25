@@ -5,8 +5,6 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
@@ -23,8 +21,6 @@ import com.example.esp32_iot_androidapp.databinding.FragmentMeasureBinding;
 public class MeasureFragment extends Fragment implements GattUpdateReceiver.GattUpdateListener {
 
     private FragmentMeasureBinding binding;
-    TextView tv_temp_value, tv_hum_value, tv_lum_value, tv_status_conn;
-    ImageView iv_slrad;
     private GattUpdateReceiver mGattUpdateReceiver;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -35,19 +31,13 @@ public class MeasureFragment extends Fragment implements GattUpdateReceiver.Gatt
         binding = FragmentMeasureBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
 
-        tv_temp_value = root.findViewById(R.id.TV_temperature_value);
-        tv_hum_value = root.findViewById(R.id.TV_humidity_value);
-        tv_lum_value = root.findViewById(R.id.TV_luminosity_value);
-        tv_status_conn = root.findViewById(R.id.TV_status_result);
-        iv_slrad = root.findViewById(R.id.IV_luminosity);
-
         mGattUpdateReceiver = new GattUpdateReceiver(this);
 
         if (MainActivity.BleDeviceAddress.equals("NA")) {
-            tv_status_conn.setText("Connect to device first!");
-            tv_temp_value.setText("");
-            tv_hum_value.setText("");
-            tv_lum_value.setText("");
+            binding.tvStatusResult.setText("Connect to device first!");
+            binding.tvTemperatureValue.setText("");
+            binding.tvHumidityValue.setText("");
+            binding.tvLuminosityValue.setText("");
         }
 
         return root;
@@ -62,12 +52,12 @@ public class MeasureFragment extends Fragment implements GattUpdateReceiver.Gatt
     
     @Override
     public void onGattConnected() {
-        tv_status_conn.setText("Device Connected");
+        binding.tvStatusResult.setText("Device Connected");
     }
 
     @Override
     public void onGattDisconnected() {
-        tv_status_conn.setText("Device Disconnected");
+        binding.tvStatusResult.setText("Device Disconnected");
     }
 
     @Override
@@ -77,30 +67,30 @@ public class MeasureFragment extends Fragment implements GattUpdateReceiver.Gatt
 
     @Override
     public void onDataAvailable(String value) {
-        tv_status_conn.setText("Device Connected");
+        binding.tvStatusResult.setText("Device Connected");
         if (value != null) {
             if(value.contains("TEMP")){
                 int index_data = value.indexOf('_');
                 String data = value.substring(index_data + 1);
                 int temp_data = SettingData.convertBleData(data);
-                tv_temp_value.setText(String.valueOf(temp_data)+ "°C");
+                binding.tvTemperatureValue.setText(String.valueOf(temp_data)+ "°C");
 
             }else if(value.contains("HUM")) {
                 int index_data = value.indexOf('_');
                 String data = value.substring(index_data + 1);
                 int hum_data = SettingData.convertBleData(data);
-                tv_hum_value.setText(String.valueOf(hum_data)+ "%");
+                binding.tvHumidityValue.setText(String.valueOf(hum_data)+ "%");
 
             }else if(value.contains("SLRAD")) {
                 int index_data = value.indexOf('_');
                 String data = value.substring(index_data + 1);
                 int lum_data = SettingData.convertBleData(data);
                 if(lum_data == 0){
-                    tv_lum_value.setText("ON");
-                    iv_slrad.setImageResource(R.drawable.bulbon);
+                    binding.tvLuminosityValue.setText("ON");
+                    binding.ivLuminosity.setImageResource(R.drawable.bulbon);
                 }else{
-                    tv_lum_value.setText("OFF");
-                    iv_slrad.setImageResource(R.drawable.bulboff);
+                    binding.tvLuminosityValue.setText("OFF");
+                    binding.ivLuminosity.setImageResource(R.drawable.bulboff);
                 }
 
             }

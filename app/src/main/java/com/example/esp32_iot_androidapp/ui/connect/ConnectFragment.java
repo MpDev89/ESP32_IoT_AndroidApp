@@ -1,4 +1,4 @@
-package com.example.esp32_iot_androidapp.ui.scanner;
+package com.example.esp32_iot_androidapp.ui.connect;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
@@ -37,29 +37,24 @@ import com.example.esp32_iot_androidapp.BleActivity;
 import com.example.esp32_iot_androidapp.Esp32GattAttributes;
 import com.example.esp32_iot_androidapp.GattUpdateReceiver;
 import com.example.esp32_iot_androidapp.MainActivity;
-import com.example.esp32_iot_androidapp.R;
-import com.example.esp32_iot_androidapp.databinding.FragmentScannerBinding;
+import com.example.esp32_iot_androidapp.databinding.FragmentConnectBinding;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
 
-public class ScannerFragment extends Fragment implements GattUpdateReceiver.GattUpdateListener {
+public class ConnectFragment extends Fragment implements GattUpdateReceiver.GattUpdateListener {
 
-    private FragmentScannerBinding binding;
+    private FragmentConnectBinding binding;
     List<ScanFilter> filters;
     ScanSettings settings;
     private final Handler scanBleHandler = new Handler();
     private static final long SCAN_PERIOD = 10000;
     BluetoothLeScanner bluetoothLeScanner;
     public BleActivity mBluetoothActivity;
-    public String bleDeviceName;
     private ArrayList<String> deviceList;
     private ArrayAdapter<String> adapter;
-    private TextView tv_conn_status;
-    private Switch sw_disc_dev;
-    ListView listViewDevices;
     private GattUpdateReceiver mGattUpdateReceiver;
     private final String LIST_NAME = "NAME";
     private final String LIST_UUID = "UUID";
@@ -68,16 +63,13 @@ public class ScannerFragment extends Fragment implements GattUpdateReceiver.Gatt
     @RequiresApi(api = Build.VERSION_CODES.S)
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
-        ScannerViewModel scannerViewModel =
-                new ViewModelProvider(this).get(ScannerViewModel.class);
+        ConnectViewModel connectViewModel =
+                new ViewModelProvider(this).get(ConnectViewModel.class);
 
-        binding = FragmentScannerBinding.inflate(inflater, container, false);
+        binding = FragmentConnectBinding.inflate(inflater, container, false);
         View root = binding.getRoot();
 
         mGattUpdateReceiver = new GattUpdateReceiver(this);
-        tv_conn_status = root.findViewById(R.id.TV_scanner_info);
-        listViewDevices = root.findViewById(R.id.LV_BLEDevicesList);
-        sw_disc_dev = root.findViewById(R.id.SW_ble_disconn);
 
         /* Build ScanSetting */
         settings = new ScanSettings.Builder()
@@ -88,36 +80,36 @@ public class ScannerFragment extends Fragment implements GattUpdateReceiver.Gatt
 
         deviceList = new ArrayList<>();
         adapter = new ArrayAdapter<>(requireContext(), android.R.layout.simple_list_item_1, deviceList);
-        listViewDevices.setAdapter(adapter);
+        binding.lvBleDevicesList.setAdapter(adapter);
 
         Intent gattServiceIntent = new Intent(getActivity(), BleActivity.class);
         requireActivity().bindService(gattServiceIntent, mServiceConnection, Context.BIND_AUTO_CREATE);
 
         // Handle click
-        listViewDevices.setOnItemClickListener((parent, view, position, id) -> {
-            String selectedDevice = deviceList.get(position);
-            System.out.println("Clicked: " + selectedDevice);
-            String address = (selectedDevice.substring(selectedDevice.indexOf("-") + 1)).trim();
-            System.out.println("address: " + address);
-            // 👉 Perform any action here, e.g. connect to Bluetooth device
-            MainActivity.BleDeviceAddress = address;
-            ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.BLUETOOTH_SCAN);
-            bluetoothLeScanner.stopScan(leScanCallback);
-            if(mBluetoothActivity.connect(MainActivity.BleDeviceAddress)){
-                bleDeviceName = selectedDevice.substring(0, selectedDevice.indexOf("-"));
-                tv_conn_status.setText("Connecting to "+bleDeviceName);
+        binding.lvBleDevicesList.setOnItemClickListener((parent, view, position, id) -> {
+            if(mBluetoothActivity.BleConnectionState == BleActivity.STATE_DISCONNECTED) {
+                String selectedDevice = deviceList.get(position);
+                System.out.println("Clicked: " + selectedDevice);
+                String address = (selectedDevice.substring(selectedDevice.indexOf("-") + 1)).trim();
+                System.out.println("address: " + address);
+                // 👉 Perform any action here, e.g. connect to Bluetooth device
+                MainActivity.BleDeviceAddress = address;
+                ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.BLUETOOTH_SCAN);
+                bluetoothLeScanner.stopScan(leScanCallback);
+                if (mBluetoothActivity.connect(MainActivity.BleDeviceAddress)) {
+                    MainActivity.BleDeviceName = selectedDevice.substring(0, selectedDevice.indexOf("-"));
+                    binding.tvScannerInfo.setText("Connecting to " + MainActivity.BleDeviceName);
+                }
+            }else{
+                binding.tvScannerInfo.setText("Device already connected to " + MainActivity.BleDeviceName);
             }
         });
 
-        sw_disc_dev.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (!isChecked) {
-                // If the user tries to turn it off, turn it back on.
-                buttonView.setChecked(true);
-            }else{
-                if(mBluetoothActivity.BleConnectionState == BleActivity.STATE_CONNECTED){
-                    mBluetoothActivity.disconnect();
-                }
+        binding.btBleDisconn.setOnClickListener(v -> {
+            if(mBluetoothActivity.BleConnectionState == BleActivity.STATE_CONNECTED){
+                mBluetoothActivity.disconnect();
             }
+
         });
 
 
@@ -127,7 +119,6 @@ public class ScannerFragment extends Fragment implements GattUpdateReceiver.Gatt
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        binding = null;
     }
 
     //Start the device searching
@@ -218,17 +209,19 @@ public class ScannerFragment extends Fragment implements GattUpdateReceiver.Gatt
         super.onResume();
         ContextCompat.registerReceiver(requireActivity(), mGattUpdateReceiver, makeGattUpdateIntentFilter(), ContextCompat.RECEIVER_NOT_EXPORTED);
         if (mBluetoothActivity != null) {
-            if (!MainActivity.BleDeviceAddress.equals("NA")){
+            if(!MainActivity.BleDeviceAddress.equals("NA")) {
                 if (mBluetoothActivity.BleConnectionState == BleActivity.STATE_DISCONNECTED) {
-                    final boolean result = mBluetoothActivity.connect(MainActivity.BleDeviceAddress);
-                    System.out.println("Connect request result=" + result);
-                }else if (mBluetoothActivity.BleConnectionState == BleActivity.STATE_CONNECTED){
-                    System.out.println("Status: Device Connected");
+                    binding.tvScannerInfo.setText("Disconnected!");
+                    MainActivity.BleDeviceAddress = "NA";
+                    MainActivity.BleDeviceName = "NA";
+                } else if (mBluetoothActivity.BleConnectionState == BleActivity.STATE_CONNECTED) {
+                    binding.tvScannerInfo.setText("Connected to " + MainActivity.BleDeviceName + "!");
+                } else {
+                    binding.tvScannerInfo.setText("Click on device to connect!");
                 }
-            }else{
-                bluetoothLeScanner = mBluetoothActivity.getBLeScanner();
-                scanLeDevice(true);
             }
+            bluetoothLeScanner = mBluetoothActivity.getBLeScanner();
+            scanLeDevice(true);
         }
         System.out.println("onResume");
     }
@@ -241,12 +234,12 @@ public class ScannerFragment extends Fragment implements GattUpdateReceiver.Gatt
 
     @Override
     public void onGattConnected() {
-        tv_conn_status.setText("Connected to "+bleDeviceName+"!");
+        binding.tvScannerInfo.setText("Connected to "+MainActivity.BleDeviceName+"!");
     }
 
     @Override
     public void onGattDisconnected() {
-        tv_conn_status.setText("Disconnected!");
+        binding.tvScannerInfo.setText("Disconnected!");
     }
 
     @Override
