@@ -10,13 +10,12 @@ public class Esp32GattAttributes {
     public static String TEMP_CH = "4ac8a682-9736-4e5d-932b-e9b31405049c";
     public static String SLRAD_CH = "e7924032-959e-4493-bd5c-0df9f1d225a3";
     public static String IOT_SERVICE = "906311b0-4d56-11eb-8404-0800200c9a66";
-    public static String CLIENT_CHARACTERISTIC_CONFIG = "00002902-0000-1000-8000-00805f9b34fb";
+    public static String CCCD = "00002902-0000-1000-8000-00805f9b34fb";
 
     static {
         // Sample Services.
         attributes.put(IOT_SERVICE, "IoTService");
-//        attributes.put("0000180a-0000-1000-8000-00805f9b34fb", "Device Information Service");
-        // Sample Characteristics.
+        attributes.put(CCCD, "ClientCharacteristicConfigurationDescriptor");
         attributes.put(HUM_CH, "HumidityCharacteristic");
         attributes.put(TEMP_CH, "TemperatureCharacteristic");
         attributes.put(SLRAD_CH, "SolarRadiationCharacteristic");

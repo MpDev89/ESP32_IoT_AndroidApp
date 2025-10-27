@@ -25,7 +25,7 @@ public class MainActivity extends AppCompatActivity {
 
     private AppBarConfiguration mAppBarConfiguration;
     private ActivityMainBinding binding;
-    private static int BLE_PERMISSIONS_REQUEST_CODE = 0x55; // Could be any other positive integer value
+    private static final int BLE_PERMISSIONS_REQUEST_CODE = 0x55; // Could be any other positive integer value
     private int permissionsCount;
     public static String BleDeviceAddress = "NA";
     public static String BleDeviceName = "NA";
@@ -140,16 +140,14 @@ public class MainActivity extends AppCompatActivity {
         return missingPermissions;
     }
     private String getMissingLocationPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
-                && Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             // COARSE is needed for Android 6 to Android 10
             return android.Manifest.permission.ACCESS_COARSE_LOCATION;
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        } else {
             // FINE is needed for Android 10 and above
             return Manifest.permission.ACCESS_FINE_LOCATION;
         }
         // No location permission is needed for Android 6 and below
-        return null;
     }
 
     @Override

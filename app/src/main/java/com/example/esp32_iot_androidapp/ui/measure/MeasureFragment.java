@@ -123,7 +123,6 @@ public class MeasureFragment extends Fragment implements GattUpdateReceiver.Gatt
         intentFilter.addAction(BleActivity.ACTION_GATT_CONNECTED);
         intentFilter.addAction(BleActivity.ACTION_GATT_DISCONNECTED);
         intentFilter.addAction(BleActivity.ACTION_GATT_SERVICES_DISCOVERED);
-        intentFilter.addAction(BleActivity.ACTION_SEND_DATA);
         intentFilter.addAction(BleActivity.ACTION_DATA_AVAILABLE);
         return intentFilter;
     }

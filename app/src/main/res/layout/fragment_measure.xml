@@ -26,6 +26,7 @@
                 android:layout_marginStart="8dp"
                 android:layout_marginTop="32dp"
                 android:text="Connection status:"
+                android:textStyle="bold"
                 android:textSize="20sp"
                 app:layout_constraintBottom_toTopOf="@+id/iv_temperature"
                 app:layout_constraintStart_toStartOf="parent"

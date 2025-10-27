@@ -2,8 +2,10 @@ package com.example.esp32_iot_androidapp.ui.connect;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
+import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanFilter;
@@ -18,13 +20,11 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.ListView;
-import android.widget.Switch;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
@@ -34,18 +34,19 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.esp32_iot_androidapp.BleActivity;
-import com.example.esp32_iot_androidapp.Esp32GattAttributes;
 import com.example.esp32_iot_androidapp.GattUpdateReceiver;
 import com.example.esp32_iot_androidapp.MainActivity;
 import com.example.esp32_iot_androidapp.databinding.FragmentConnectBinding;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
-
+/**
+ * A Fragment for scanning and connecting to BLE devices.
+ */
 public class ConnectFragment extends Fragment implements GattUpdateReceiver.GattUpdateListener {
 
+    private static final String TAG = ConnectFragment.class.getSimpleName();
     private FragmentConnectBinding binding;
     List<ScanFilter> filters;
     ScanSettings settings;
@@ -56,9 +57,15 @@ public class ConnectFragment extends Fragment implements GattUpdateReceiver.Gatt
     private ArrayList<String> deviceList;
     private ArrayAdapter<String> adapter;
     private GattUpdateReceiver mGattUpdateReceiver;
-    private final String LIST_NAME = "NAME";
-    private final String LIST_UUID = "UUID";
 
+    /**
+     * Called to have the fragment instantiate its user interface view.
+     *
+     * @param inflater The LayoutInflater object that can be used to inflate any views in the fragment.
+     * @param container If non-null, this is the parent view that the fragment's UI should be attached to.
+     * @param savedInstanceState If non-null, this fragment is being re-constructed from a previous saved state as given here.
+     * @return Return the View for the fragment's UI, or null.
+     */
     @SuppressLint("SetTextI18n")
     @RequiresApi(api = Build.VERSION_CODES.S)
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -89,13 +96,12 @@ public class ConnectFragment extends Fragment implements GattUpdateReceiver.Gatt
         binding.lvBleDevicesList.setOnItemClickListener((parent, view, position, id) -> {
             if(mBluetoothActivity.BleConnectionState == BleActivity.STATE_DISCONNECTED) {
                 String selectedDevice = deviceList.get(position);
-                System.out.println("Clicked: " + selectedDevice);
+                Log.d(TAG, "Clicked: " + selectedDevice);
                 String address = (selectedDevice.substring(selectedDevice.indexOf("-") + 1)).trim();
-                System.out.println("address: " + address);
-                // 👉 Perform any action here, e.g. connect to Bluetooth device
+                Log.d(TAG, "address: " + address);
                 MainActivity.BleDeviceAddress = address;
                 ActivityCompat.checkSelfPermission(requireActivity(), Manifest.permission.BLUETOOTH_SCAN);
-                bluetoothLeScanner.stopScan(leScanCallback);
+                scanLeDevice(false);
                 if (mBluetoothActivity.connect(MainActivity.BleDeviceAddress)) {
                     MainActivity.BleDeviceName = selectedDevice.substring(0, selectedDevice.indexOf("-"));
                     binding.tvScannerInfo.setText("Connecting to " + MainActivity.BleDeviceName);
@@ -116,21 +122,45 @@ public class ConnectFragment extends Fragment implements GattUpdateReceiver.Gatt
         return root;
     }
 
+    /**
+     * Called when the view previously created by onCreateView() has been detached from the fragment.
+     */
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        //no action binding shall be kept
     }
 
-    //Start the device searching
+    /**
+     * Starts or stops scanning for BLE devices.
+     *
+     * @param enable True to start scanning, false to stop.
+     */
     @SuppressLint("MissingPermission")
     private void scanLeDevice(final boolean enable) {
-        if (enable) {
+        if (bluetoothLeScanner == null) return;
+        BluetoothManager bluetoothManager = (BluetoothManager) requireActivity().getSystemService(Context.BLUETOOTH_SERVICE);
+        if (bluetoothManager == null) {
+            Log.e(TAG, "Unable to initialize BluetoothManager.");
+            return;
+        }
+        final BluetoothAdapter bluetoothAdapter = bluetoothManager.getAdapter();
+        if (bluetoothAdapter == null || !bluetoothAdapter.isEnabled()) {
+            if (binding != null) {
+                binding.tvScannerInfo.setText("Please enable Bluetooth");
+                if (deviceList != null && adapter != null) {
+                    deviceList.clear();
+                    adapter.notifyDataSetChanged();
+                    MainActivity.BleDeviceAddress = "NA";
+                    MainActivity.BleDeviceName = "NA";
+                }
+            }
+        }else if (enable) {
             // Stops scanning after a pre-defined scan period.
             scanBleHandler.postDelayed(new Runnable() {
                 @Override
                 public void run() {
                     bluetoothLeScanner.stopScan(leScanCallback);
-                    //status.setText("Status: Device Not found");
                 }
             }, SCAN_PERIOD);
             bluetoothLeScanner.startScan(leScanCallback);
@@ -139,57 +169,74 @@ public class ConnectFragment extends Fragment implements GattUpdateReceiver.Gatt
         }
     }
 
-    /* Scan result for SDK >= 21 */
+    /**
+     * Callback for BLE scan results.
+     */
     private final ScanCallback leScanCallback = new ScanCallback() {
 
+        /**
+         * Callback when a BLE advertisement has been found.
+         *
+         * @param callbackType The type of callback.
+         * @param result A ScanResult object, which contains the advertising data.
+         */
         @SuppressLint("MissingPermission")
         @Override
         public void onScanResult(int callbackType, ScanResult result) {
-            System.out.println("BLE// onScanResult");
             super.onScanResult(callbackType, result);
-
-            System.out.println("callbackType: "+ callbackType);
-            System.out.println("result: " + result.toString());
-            System.out.println("Device Name: "+ result.getDevice().getName());
-            System.out.println("Signal: " + result.getRssi());
-
             String deviceName = result.getDevice().getName();
             String deviceAddress = result.getDevice().getAddress(); // MAC address
-
             String deviceInfo = (deviceName != null ? deviceName : "Unknown") + " - " + deviceAddress;
-
             if (!deviceList.contains(deviceInfo)) {
                 deviceList.add(deviceInfo);
                 adapter.notifyDataSetChanged();
             }
         }
 
+        /**
+         * Callback when batch results are delivered.
+         *
+         * @param results List of scan results that are previously scanned.
+         */
         @Override
         public void onBatchScanResults(List<ScanResult> results) {
-            System.out.println("BLE// onBatchScanResults");
+            Log.d(TAG, "BLE// onBatchScanResults");
             for (ScanResult sr : results) {
-                System.out.println("ScanResult - Results" + sr.toString());
+                Log.d(TAG, "ScanResult - Results" + sr.toString());
             }
         }
 
+        /**
+         * Callback when scan could not be started.
+         *
+         * @param errorCode Error code (one of SCAN_FAILED_*).
+         */
         @Override
         public void onScanFailed(int errorCode) {
-            System.out.println("BLE// onScanFailed");
-            System.out.println("Scan Failed - Error Code: " + errorCode);
+            Log.e(TAG, "BLE// onScanFailed");
+            Log.e(TAG, "Scan Failed - Error Code: " + errorCode);
         }
 
     };
 
-    // Code to manage Service lifecycle.
+    /**
+     * Manages the connection to the BleActivity service.
+     */
     private final ServiceConnection mServiceConnection = new ServiceConnection() {
 
+        /**
+         * Called when a connection to the Service has been established.
+         *
+         * @param componentName The concrete component name of the service that has been connected.
+         * @param service The IBinder of the Service's communication channel.
+         */
         @SuppressLint("MissingPermission")
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder service) {
             BleActivity.LocalBinder binder = (BleActivity.LocalBinder) service;
             mBluetoothActivity = binder.getService();
             if (!mBluetoothActivity.initialize()) {
-                System.out.println("ServiceConnection - Unable to initialize Bluetooth");
+                Log.e(TAG, "ServiceConnection - Unable to initialize Bluetooth");
                 requireActivity().finish();
             } else {
                 bluetoothLeScanner = mBluetoothActivity.getBLeScanner();
@@ -197,13 +244,21 @@ public class ConnectFragment extends Fragment implements GattUpdateReceiver.Gatt
             }
         }
 
+        /**
+         * Called when a connection to the Service has been lost.
+         *
+         * @param componentName The concrete component name of the service whose connection has been lost.
+         */
         @Override
         public void onServiceDisconnected(ComponentName componentName) {
             mBluetoothActivity = null;
         }
     };
 
-
+    /**
+     * Called when the fragment is visible to the user and actively running.
+     */
+    @SuppressLint("SetTextI18n")
     @Override
     public void onResume() {
         super.onResume();
@@ -211,7 +266,7 @@ public class ConnectFragment extends Fragment implements GattUpdateReceiver.Gatt
         if (mBluetoothActivity != null) {
             if(!MainActivity.BleDeviceAddress.equals("NA")) {
                 if (mBluetoothActivity.BleConnectionState == BleActivity.STATE_DISCONNECTED) {
-                    binding.tvScannerInfo.setText("Disconnected!");
+                    binding.tvScannerInfo.setText("Disconnected");
                     MainActivity.BleDeviceAddress = "NA";
                     MainActivity.BleDeviceName = "NA";
                 } else if (mBluetoothActivity.BleConnectionState == BleActivity.STATE_CONNECTED) {
@@ -223,85 +278,100 @@ public class ConnectFragment extends Fragment implements GattUpdateReceiver.Gatt
             bluetoothLeScanner = mBluetoothActivity.getBLeScanner();
             scanLeDevice(true);
         }
-        System.out.println("onResume");
+        Log.d(TAG, "onResume");
     }
 
+    /**
+     * Called when the Fragment is no longer resumed.
+     */
+    @SuppressLint("MissingPermission")
     @Override
     public void onPause() {
         super.onPause();
         requireActivity().unregisterReceiver(mGattUpdateReceiver);
+        scanLeDevice(false);
     }
 
+    /**
+     * Callback for GATT connection event.
+     */
+    @SuppressLint("SetTextI18n")
     @Override
     public void onGattConnected() {
         binding.tvScannerInfo.setText("Connected to "+MainActivity.BleDeviceName+"!");
     }
 
+    /**
+     * Callback for GATT disconnection event.
+     */
+    @SuppressLint("SetTextI18n")
     @Override
     public void onGattDisconnected() {
         binding.tvScannerInfo.setText("Disconnected!");
     }
 
+    /**
+     * Callback for GATT services discovered event.
+     */
     @Override
     public void onGattServicesDiscovered() {
         displayGattServices(mBluetoothActivity.getSupportedGattServices());
     }
 
+    /**
+     * Callback for when data is available from a characteristic.
+     * @param data The data received.
+     */
     @Override
     public void onDataAvailable(String data) {
-        // Left blank as requested
+        // no action
     }
 
+    /**
+     * Creates an IntentFilter for GATT update actions.
+     *
+     * @return The configured IntentFilter.
+     */
     private static IntentFilter makeGattUpdateIntentFilter() {
         final IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(BleActivity.ACTION_GATT_CONNECTED);
         intentFilter.addAction(BleActivity.ACTION_GATT_DISCONNECTED);
         intentFilter.addAction(BleActivity.ACTION_GATT_SERVICES_DISCOVERED);
-        intentFilter.addAction(BleActivity.ACTION_SEND_DATA);
         intentFilter.addAction(BleActivity.ACTION_DATA_AVAILABLE);
         return intentFilter;
     }
 
-    // Demonstrates how to iterate through the supported GATT Services/Characteristics.
-    // In this sample, we populate the data structure that is bound to the ExpandableListView
-    // on the UI.
+    /**
+     * Iterates through supported GATT Services/Characteristics to enable notifications.
+     *
+     * @param gattServices List of discovered GATT services.
+     */
     private void displayGattServices(List<BluetoothGattService> gattServices) {
         if (gattServices == null) return;
-        String uuid = null;
-        ArrayList<HashMap<String, String>> gattServiceData = new ArrayList<HashMap<String, String>>();
-        ArrayList<ArrayList<HashMap<String, String>>> gattCharacteristicData = new ArrayList<ArrayList<HashMap<String, String>>>();
-        ArrayList<ArrayList<BluetoothGattCharacteristic>> mGattCharacteristics = new ArrayList<ArrayList<BluetoothGattCharacteristic>>();
 
-        // Loops through available GATT Services.
+        // Get UUIDs for the characteristics we are interested in
+        String humUuid = BleActivity.UUID_IOT_HUM_CH.toString();
+        String tempUuid = BleActivity.UUID_IOT_TEMP_CH.toString();
+        String slradUuid = BleActivity.UUID_IOT_SLRAD_CH.toString();
+
+        // Loops through available GATT Services
         for (BluetoothGattService gattService : gattServices) {
-            HashMap<String, String> currentServiceData = new HashMap<String, String>();
-            uuid = gattService.getUuid().toString();
-            currentServiceData.put(LIST_NAME, Esp32GattAttributes.lookup(uuid, "unknownServiceString"));
-            currentServiceData.put(LIST_UUID, uuid);
-            gattServiceData.add(currentServiceData);
+            // Loops through available Characteristics
+            for (BluetoothGattCharacteristic gattCharacteristic : gattService.getCharacteristics()) {
+                String charUuid = gattCharacteristic.getUuid().toString();
 
-            ArrayList<HashMap<String, String>> gattCharacteristicGroupData = new ArrayList<HashMap<String, String>>();
-            List<BluetoothGattCharacteristic> gattCharacteristics = gattService.getCharacteristics();
-            ArrayList<BluetoothGattCharacteristic> charas = new ArrayList<BluetoothGattCharacteristic>();
+                // Check if this is one of the target characteristics
+                if (charUuid.equalsIgnoreCase(humUuid) ||
+                        charUuid.equalsIgnoreCase(tempUuid) ||
+                        charUuid.equalsIgnoreCase(slradUuid)) {
 
-            // Loops through available Characteristics.
-            for (BluetoothGattCharacteristic gattCharacteristic : gattCharacteristics) {
-                charas.add(gattCharacteristic);
-                HashMap<String, String> currentCharaData = new HashMap<String, String>();
-                uuid = gattCharacteristic.getUuid().toString();
-                currentCharaData.put(LIST_NAME, Esp32GattAttributes.lookup(uuid, "unknownCharaString"));
-                currentCharaData.put(LIST_UUID, uuid);
-                gattCharacteristicGroupData.add(currentCharaData);
-                if (currentCharaData.containsValue("HumidityCharacteristic") || currentCharaData.containsValue("TemperatureCharacteristic")
-                        || currentCharaData.containsValue("SolarRadiationCharacteristic")) {
-                    final int CharaProp = gattCharacteristic.getProperties();
-                    if (CharaProp > 0) {
+                    // Enable notifications if the characteristic supports it
+                    if ((gattCharacteristic.getProperties() & BluetoothGattCharacteristic.PROPERTY_NOTIFY) > 0) {
+                        Log.d(TAG, "Enabling notification for characteristic: " + charUuid);
                         mBluetoothActivity.setCharacteristicNotification(gattCharacteristic, true);
                     }
                 }
             }
-            mGattCharacteristics.add(charas);
-            gattCharacteristicData.add(gattCharacteristicGroupData);
         }
     }
 }

@@ -1,6 +1,5 @@
 package com.example.esp32_iot_androidapp;
 
-import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
@@ -13,24 +12,19 @@ import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.bluetooth.le.BluetoothLeScanner;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
+import android.content.IntentFilter;
 import android.os.Binder;
-import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
-
-import androidx.annotation.RequiresApi;
-import androidx.core.app.ActivityCompat;
-
 import java.util.List;
 import java.util.UUID;
 
 
 public class BleActivity extends Service {
-
     private BluetoothAdapter mBluetoothAdapter;
     private BluetoothManager mBluetoothManager;
     private BluetoothLeScanner bluetoothLeScanner;
@@ -54,27 +48,66 @@ public class BleActivity extends Service {
     public final static UUID UUID_IOT_HUM_CH = UUID.fromString(Esp32GattAttributes.HUM_CH);
     public final static UUID UUID_IOT_TEMP_CH = UUID.fromString(Esp32GattAttributes.TEMP_CH);
     public final static UUID UUID_IOT_SLRAD_CH = UUID.fromString(Esp32GattAttributes.SLRAD_CH);
+    public static final UUID CCCD_UUID = UUID.fromString(Esp32GattAttributes.CCCD);
+
+    /**
+     * BroadcastReceiver that listens for bonding (pairing) state changes.
+     * This is necessary to handle the pairing process with a BLE device.
+     */
+    private final BroadcastReceiver mBondingReceiver = new BroadcastReceiver() {
+        /**
+         * Handles the reception of an intent. In this case, it checks for bonding state changes.
+         * @param context The Context in which the receiver is running.
+         * @param intent The Intent being received.
+         */
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            final String action = intent.getAction();
+
+            if (action.equals(BluetoothDevice.ACTION_BOND_STATE_CHANGED)) {
+                final int state = intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, BluetoothDevice.ERROR);
+
+                if (state == BluetoothDevice.BOND_BONDED) {
+                    Log.i(TAG, "Bonding successful. Discovering services.");
+                    @SuppressLint("MissingPermission")
+                    boolean result = mBluetoothGatt.discoverServices();
+                    if (!result) {
+                        Log.w(TAG, "discoverServices failed to start");
+                    }
+                    unregisterReceiver(mBondingReceiver);
+                } else if (state == BluetoothDevice.BOND_NONE) {
+                    Log.i(TAG, "Bonding failed or removed.");
+                    unregisterReceiver(mBondingReceiver);
+                }
+            }
+        }
+    };
 
 
-    private final Handler bleHandler = new Handler();
-
-
-    // Implements callback methods for GATT events that the app cares about.  For example,
-    // connection change and services discovered.
+    /**
+     * Implements callback methods for GATT events that the app cares about.
+     * These events include connection changes, services discovered, and characteristic interactions.
+     */
     public final BluetoothGattCallback mGattCallback = new BluetoothGattCallback() {
+        /**
+         * Callback indicating when GATT client has connected/disconnected to/from a remote GATT server.
+         * @param gatt GATT client
+         * @param status Status of the connect or disconnect operation.
+         * @param newState The new connection state.
+         */
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
-            String intentAction;
             if (newState == BluetoothProfile.STATE_CONNECTED) {
-                intentAction = ACTION_GATT_CONNECTED;
                 BleConnectionState = STATE_CONNECTED;
-                broadcastUpdate(intentAction);
+                broadcastUpdate(ACTION_GATT_CONNECTED);
                 // Check the bond state of the device
                 @SuppressLint("MissingPermission")
                 int bondState = device.getBondState();
                 if (bondState == BluetoothDevice.BOND_NONE) {
                     // The device is not bonded, so we need to initiate the bonding process.
                     Log.i(TAG, "Device not bonded. Starting pairing process...");
+                    final IntentFilter intentFilter = new IntentFilter(BluetoothDevice.ACTION_BOND_STATE_CHANGED);
+                    registerReceiver(mBondingReceiver, intentFilter);
                     @SuppressLint("MissingPermission")
                     boolean bondingInitiated = device.createBond();
                     if (!bondingInitiated) {
@@ -93,76 +126,95 @@ public class BleActivity extends Service {
                     // Bonding is in progress.
                     Log.i(TAG, "Bonding is in progress.");
                 }
-//                Log.i(TAG, "Connected to GATT server.");
-//                // Attempts to discover services after successful connection.
-//                Log.i(TAG, "Attempting to start service discovery:" +mBluetoothGatt.discoverServices());
 
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                intentAction = ACTION_GATT_DISCONNECTED;
                 BleConnectionState = STATE_DISCONNECTED;
                 disconnect();
                 close();
                 Log.i(TAG, "Disconnected from GATT server.");
-                broadcastUpdate(intentAction);
+                broadcastUpdate(ACTION_GATT_DISCONNECTED);
             }
         }
 
+        /**
+         * Callback invoked when the list of remote services, characteristics and descriptors
+         * for the remote device have been updated, ie new services have been discovered.
+         * @param gatt GATT client
+         * @param status GATT_SUCCESS if the remote device has been explored successfully.
+         */
         @Override
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
+                Log.i(TAG, "GATT services discovered successfully.");
                 broadcastUpdate(ACTION_GATT_SERVICES_DISCOVERED);
             } else {
                 Log.w(TAG, "onServicesDiscovered received: " + status);
             }
         }
+
+        /**
+         * Callback reporting the result of a characteristic read operation.
+         * @param gatt GATT client invoked {@link BluetoothGatt#readCharacteristic}
+         * @param characteristic Characteristic that was read from the remote device.
+         * @param status GATT_SUCCESS if the read operation was completed successfully.
+         */
         @Override
         public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 broadcastUpdate(ACTION_DATA_AVAILABLE, characteristic);
             }
         }
+
+        /**
+         * Callback indicating the result of a characteristic write operation.
+         * @param gatt GATT client invoked {@link BluetoothGatt#writeCharacteristic}
+         * @param characteristic Characteristic that was written to the remote device.
+         * @param status The result of the write operation.
+         */
         @Override
         public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 broadcastUpdate(ACTION_SEND_DATA);
             }
         }
+
+        /**
+         * Callback triggered as a result of a remote characteristic notification.
+         * @param gatt GATT client
+         * @param characteristic Characteristic that has changed.
+         */
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
-           broadcastUpdate(ACTION_DATA_AVAILABLE, characteristic);
+            broadcastUpdate(ACTION_DATA_AVAILABLE, characteristic);
         }
     };
 
+    /**
+     * Sends a broadcast to other components of the application.
+     * @param action The action to be broadcasted.
+     */
     private void broadcastUpdate(final String action) {
         final Intent intent = new Intent(action);
         sendBroadcast(intent);
     }
 
+    /**
+     * Sends a broadcast with data from a BLE characteristic.
+     * @param action The action to be broadcasted.
+     * @param characteristic The characteristic containing the data.
+     */
     private void broadcastUpdate(final String action, final BluetoothGattCharacteristic characteristic) {
         final Intent intent = new Intent(action);
-
-        if (UUID_IOT_HUM_CH.equals(characteristic.getUuid())) {
-            final byte[] data = characteristic.getValue();
-            if (data != null && data.length > 0) {
-                final StringBuilder stringBuilder = new StringBuilder(data.length);
-                for(byte byteChar : data)
-                    stringBuilder.append(String.format("%02X", byteChar));
+        final byte[] data = characteristic.getValue();
+        if (data != null && data.length > 0) {
+            final StringBuilder stringBuilder = new StringBuilder(data.length);
+            for (byte byteChar : data)
+                stringBuilder.append(String.format("%02X", byteChar));
+            if (UUID_IOT_HUM_CH.equals(characteristic.getUuid())) {
                 intent.putExtra(EXTRA_DATA, "HUM_" + stringBuilder.toString());
-            }
-        }else if (UUID_IOT_TEMP_CH.equals(characteristic.getUuid())) {
-            final byte[] data = characteristic.getValue();
-            if (data != null && data.length > 0) {
-                final StringBuilder stringBuilder = new StringBuilder(data.length);
-                for(byte byteChar : data)
-                    stringBuilder.append(String.format("%02X", byteChar));
+            } else if (UUID_IOT_TEMP_CH.equals(characteristic.getUuid())) {
                 intent.putExtra(EXTRA_DATA, "TEMP_" + stringBuilder.toString());
-            }
-        }else if (UUID_IOT_SLRAD_CH.equals(characteristic.getUuid())) {
-            final byte[] data = characteristic.getValue();
-            if (data != null && data.length > 0) {
-                final StringBuilder stringBuilder = new StringBuilder(data.length);
-                for(byte byteChar : data)
-                    stringBuilder.append(String.format("%02X", byteChar));
+            } else if (UUID_IOT_SLRAD_CH.equals(characteristic.getUuid())) {
                 intent.putExtra(EXTRA_DATA, "SLRAD_" + stringBuilder.toString());
             }
         }
@@ -170,18 +222,34 @@ public class BleActivity extends Service {
     }
 
     private final IBinder mBinder = new LocalBinder();
-
+    /**
+     * Binder for the service, allowing clients to get a reference to the service.
+     */
     public class LocalBinder extends Binder {
+        /**
+         * Returns the instance of BleActivity.
+         * @return The BleActivity instance.
+         */
         public BleActivity getService() {
             return BleActivity.this;
         }
     }
 
+    /**
+     * Called when a client binds to the service.
+     * @param intent The Intent that was used to bind to this service.
+     * @return Return an IBinder through which clients can call on to the service.
+     */
     @Override
     public IBinder onBind(Intent intent) {
         return mBinder;
     }
 
+    /**
+     * Called when all clients have unbound from a particular interface published by the service.
+     * @param intent The Intent that was used to bind to this service.
+     * @return Return true if you would like to have the service's onRebind method later called when new clients bind to it.
+     */
     @Override
     public boolean onUnbind(Intent intent) {
         // After using a given device, you should make sure that BluetoothGatt.close() is called
@@ -191,8 +259,11 @@ public class BleActivity extends Service {
         return super.onUnbind(intent);
     }
 
-    /** method for clients
-     * @return*/
+    /**
+     * APIs for clients
+     *
+     * @return
+     */
     public BluetoothLeScanner getBLeScanner() {
         return bluetoothLeScanner;
     }
@@ -226,12 +297,12 @@ public class BleActivity extends Service {
      * Connects to the GATT server hosted on the Bluetooth LE device.
      *
      * @param address The device address of the destination device.
-     *
      * @return Return true if the connection is initiated successfully. The connection result
-     *         is reported asynchronously through the
-     *         {@code BluetoothGattCallback#onConnectionStateChange(android.bluetooth.BluetoothGatt, int, int)}
-     *         callback.
+     * is reported asynchronously through the
+     * {@code BluetoothGattCallback#onConnectionStateChange(android.bluetooth.BluetoothGatt, int, int)}
+     * callback.
      */
+    @SuppressLint("MissingPermission")
     public boolean connect(final String address) {
         if (mBluetoothAdapter == null || address == null) {
             Log.w(TAG, "BluetoothAdapter not initialized or unspecified address.");
@@ -240,22 +311,11 @@ public class BleActivity extends Service {
         // Previously connected device.  Try to reconnect.
         if (mBluetoothGatt != null) {
             Log.d(TAG, "Trying to use an existing mBluetoothGatt for connection.");
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
-                // TODO: Consider calling
-                //    ActivityCompat#requestPermissions
-                // here to request the missing permissions, and then overriding
-                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                //                                          int[] grantResults)
-                // to handle the case where the user grants the permission. See the documentation
-                // for ActivityCompat#requestPermissions for more details.
+            if (mBluetoothGatt.connect()) {
+                BleConnectionState = STATE_CONNECTING;
+                return true;
+            } else {
                 return false;
-            }else {
-                if (mBluetoothGatt.connect()) {
-                    BleConnectionState = STATE_CONNECTING;
-                    return true;
-                } else {
-                    return false;
-                }
             }
         }
         device = mBluetoothAdapter.getRemoteDevice(address);
@@ -275,48 +335,26 @@ public class BleActivity extends Service {
      * {@code BluetoothGattCallback#onConnectionStateChange(android.bluetooth.BluetoothGatt, int, int)}
      * callback.
      */
+    @SuppressLint("MissingPermission")
     public void disconnect() {
         if (mBluetoothAdapter == null || mBluetoothGatt == null) {
             Log.w(TAG, "BluetoothAdapter not initialized");
             return;
         }
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            return;
-        }else {
-            mBluetoothGatt.disconnect();
-        }
-
-
+        mBluetoothGatt.disconnect();
     }
 
     /**
      * After using a given BLE device, the app must call this method to ensure resources are
      * released properly.
      */
+    @SuppressLint("MissingPermission")
     public void close() {
         if (mBluetoothGatt == null) {
             return;
         }
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            return;
-        }else {
-            mBluetoothGatt.close();
-            mBluetoothGatt = null;
-        }
+        mBluetoothGatt.close();
+        mBluetoothGatt = null;
     }
 
     /**
@@ -342,6 +380,7 @@ public class BleActivity extends Service {
      *
      * @param characteristic The characteristic to write.
      */
+    @SuppressLint("MissingPermission")
     public boolean writeCharacteristic(BluetoothGattCharacteristic characteristic, String data) {
         if (mBluetoothAdapter == null || mBluetoothGatt == null) {
             Log.w(TAG, "BluetoothAdapter not initialized");
@@ -349,8 +388,7 @@ public class BleActivity extends Service {
         }
         byte[] dataArray = data.getBytes();
         characteristic.setValue(dataArray);
-        @SuppressLint("MissingPermission") boolean status = mBluetoothGatt.writeCharacteristic(characteristic);
-        return status;
+        return mBluetoothGatt.writeCharacteristic(characteristic);
     }
 
 
@@ -358,7 +396,7 @@ public class BleActivity extends Service {
      * Enables or disables notification on a give characteristic.
      *
      * @param characteristic Characteristic to act on.
-     * @param enabled If true, enable notification.  False otherwise.
+     * @param enabled        If true, enable notification.  False otherwise.
      */
     @SuppressLint("MissingPermission")
     public void setCharacteristicNotification(BluetoothGattCharacteristic characteristic,
@@ -368,19 +406,23 @@ public class BleActivity extends Service {
             return;
         }
         mBluetoothGatt.setCharacteristicNotification(characteristic, enabled);
-        if (UUID_IOT_HUM_CH.equals(characteristic.getUuid())) {
-            BluetoothGattDescriptor descriptor = characteristic.getDescriptor(UUID.fromString(Esp32GattAttributes.HUM_CH));
-            if (descriptor != null){
-                descriptor.setValue(BluetoothGattDescriptor.ENABLE_INDICATION_VALUE);
-                mBluetoothGatt.writeDescriptor(descriptor);
+        BluetoothGattDescriptor descriptor = characteristic.getDescriptor(CCCD_UUID);
+        if (descriptor != null) {
+            byte[] value;
+            if (enabled) {
+                int properties = characteristic.getProperties();
+                if ((properties & BluetoothGattCharacteristic.PROPERTY_NOTIFY) > 0) {
+                    value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE;
+                } else if ((properties & BluetoothGattCharacteristic.PROPERTY_INDICATE) > 0) {
+                    value = BluetoothGattDescriptor.ENABLE_INDICATION_VALUE;
+                } else {
+                    return; // Characteristic does not support notifications or indications
+                }
+            } else {
+                value = BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE;
             }
-
-        }else if (UUID_IOT_TEMP_CH.equals(characteristic.getUuid())) {
-            BluetoothGattDescriptor descriptor = characteristic.getDescriptor(UUID.fromString(Esp32GattAttributes.TEMP_CH));
-            if (descriptor != null){
-                descriptor.setValue(BluetoothGattDescriptor.ENABLE_INDICATION_VALUE);
-                mBluetoothGatt.writeDescriptor(descriptor);
-            }
+            descriptor.setValue(value);
+            mBluetoothGatt.writeDescriptor(descriptor);
         }
     }
 
@@ -394,5 +436,4 @@ public class BleActivity extends Service {
         if (mBluetoothGatt == null) return null;
         return mBluetoothGatt.getServices();
     }
-
 }
