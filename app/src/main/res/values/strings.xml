@@ -2,8 +2,8 @@
     <string name="app_name">ESP32_IoT_AndroidApp</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
-    <string name="nav_header_title">Android Studio</string>
-    <string name="nav_header_subtitle">android.studio@android.com</string>
+    <string name="nav_header_title">IoT ESP32 Application</string>
+    <string name="nav_header_subtitle">mp@tech-in-mind.it</string>
     <string name="nav_header_desc">Navigation header</string>
     <string name="action_settings">Settings</string>
     <string name="menu_home">Home</string>
@@ -17,5 +17,6 @@
     <string name="str_static_info">Status:</string>
     <string name="str_init_info">Click on device to connect</string>
     <string name="bt_disconnect_device">Disconnect</string>
-    <string name="home_procedure">"With the following steps, you can connect to application and measure data:\n\n - from main drawer click on 'Connect' and select the device to establish a connect\n\n - click on 'Measure' to read data published from characteristics"</string>
+    <string name="home_procedure">"With the following steps, you can connect application to ESP32 device and measure data:\n\n - from main drawer click on 'Connect', accept the permissions and select the device to establish a connect\n\n - click on 'Measure' to read data published from characteristics"</string>
+    <string name="fab_clicked_text">Contacts: mp@tech-in-mind.it - https://github.com/MpDev89</string>
 </resources>
