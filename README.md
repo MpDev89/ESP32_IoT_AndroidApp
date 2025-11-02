@@ -50,10 +50,12 @@ Main page layout:
 
 ![Alt text](images/Main.jpg)
 
-Connection to device can be managed in this layout clicking on item from device list
+Connection to device can be managed in this layout clicking on item from device list.
+
 ![Alt text](images/Connect.jpg)
 
 Measure layout permit to read characteristic value transmitted from server.
+
 ![Alt text](images/Measure.jpg)
 
 
