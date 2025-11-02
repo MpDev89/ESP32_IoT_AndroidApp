@@ -47,6 +47,7 @@ cd project-name
 ## 🗒️ Results
 Application can be integrated with simple setup with [ESP32 device.](https://github.com/MpDev89/ESP32_BLE/blob/a50febc179277de238a71ffb6773c1ffd27bdf55/Readme.md) or using [IoT embedded application.](https://github.com/MpDev89/ESP32_IoT/blob/06ebec6d9167bcdd1a8b6634c39cf4a7ef79a2f8/Readme.md)
 Main page layout:
+
 ![Alt text](images/Main.jpg)
 
 Connection to device can be managed in this layout clicking on item from device list
