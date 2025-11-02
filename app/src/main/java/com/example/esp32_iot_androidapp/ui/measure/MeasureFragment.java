@@ -64,6 +64,11 @@ public class MeasureFragment extends Fragment implements GattUpdateReceiver.Gatt
     public void onGattServicesDiscovered() {
         //no action
     }
+    @Override
+    public void onNotificationsEnabled(){
+        //no action
+    }
+
 
     @Override
     public void onDataAvailable(String value) {
@@ -124,6 +129,7 @@ public class MeasureFragment extends Fragment implements GattUpdateReceiver.Gatt
         intentFilter.addAction(BleActivity.ACTION_GATT_DISCONNECTED);
         intentFilter.addAction(BleActivity.ACTION_GATT_SERVICES_DISCOVERED);
         intentFilter.addAction(BleActivity.ACTION_DATA_AVAILABLE);
+        intentFilter.addAction(BleActivity.ACTION_NOTIFY_ENABLED);
         return intentFilter;
     }
 

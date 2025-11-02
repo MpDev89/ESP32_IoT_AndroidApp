@@ -37,6 +37,7 @@ public class MainActivity extends AppCompatActivity {
     // Static fields to hold BLE device info; consider using a ViewModel for better state management.
     public static String BleDeviceAddress = "NA";
     public static String BleDeviceName = "NA";
+    public static boolean NotifyEnabled = false;
     FloatingActionButton fab;
 
     /**

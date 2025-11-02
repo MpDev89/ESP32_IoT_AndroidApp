@@ -16,6 +16,7 @@ public class GattUpdateReceiver extends BroadcastReceiver {
         void onGattConnected();
         void onGattDisconnected();
         void onGattServicesDiscovered();
+        void onNotificationsEnabled();
         void onDataAvailable(String data);
     }
 
@@ -38,6 +39,10 @@ public class GattUpdateReceiver extends BroadcastReceiver {
             if (listener != null) {
                 String value = intent.getStringExtra(BleActivity.EXTRA_DATA);
                 listener.onDataAvailable(value);
+            }
+        } else if (BleActivity.ACTION_NOTIFY_ENABLED.equals(action)) {
+            if (listener != null) {
+                listener.onNotificationsEnabled();
             }
         }
     }

@@ -1,8 +1,8 @@
 <resources>
-    <string name="app_name">ESP32_IoT_AndroidApp</string>
+    <string name="app_name">ESP32 AndroidApp</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
-    <string name="nav_header_title">IoT ESP32 Application</string>
+    <string name="nav_header_title">ESP32 Application</string>
     <string name="nav_header_subtitle">mp@tech-in-mind.it</string>
     <string name="nav_header_desc">Navigation header</string>
     <string name="action_settings">Settings</string>

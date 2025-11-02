@@ -58,6 +58,7 @@ public class ConnectFragment extends Fragment implements GattUpdateReceiver.Gatt
     private ArrayAdapter<String> adapter;
     private GattUpdateReceiver mGattUpdateReceiver;
 
+
     /**
      * Called to have the fragment instantiate its user interface view.
      *
@@ -270,7 +271,11 @@ public class ConnectFragment extends Fragment implements GattUpdateReceiver.Gatt
                     MainActivity.BleDeviceAddress = "NA";
                     MainActivity.BleDeviceName = "NA";
                 } else if (mBluetoothActivity.BleConnectionState == BleActivity.STATE_CONNECTED) {
-                    binding.tvScannerInfo.setText("Connected to " + MainActivity.BleDeviceName + "!");
+                    if(MainActivity.NotifyEnabled) {
+                        binding.tvScannerInfo.setText("Connected to " + MainActivity.BleDeviceName + " and notification enabled!");
+                    }else{
+                        binding.tvScannerInfo.setText("Connected to " + MainActivity.BleDeviceName + " and waiting for notification enabling...!");
+                    }
                 } else {
                     binding.tvScannerInfo.setText("Click on device to connect!");
                 }
@@ -298,7 +303,7 @@ public class ConnectFragment extends Fragment implements GattUpdateReceiver.Gatt
     @SuppressLint("SetTextI18n")
     @Override
     public void onGattConnected() {
-        binding.tvScannerInfo.setText("Connected to "+MainActivity.BleDeviceName+"!");
+        binding.tvScannerInfo.setText("Connected to "+MainActivity.BleDeviceName+"and waiting for notification enabling...");
     }
 
     /**
@@ -307,6 +312,7 @@ public class ConnectFragment extends Fragment implements GattUpdateReceiver.Gatt
     @SuppressLint("SetTextI18n")
     @Override
     public void onGattDisconnected() {
+        MainActivity.NotifyEnabled = false;
         binding.tvScannerInfo.setText("Disconnected!");
     }
 
@@ -327,6 +333,13 @@ public class ConnectFragment extends Fragment implements GattUpdateReceiver.Gatt
         // no action
     }
 
+    @SuppressLint("SetTextI18n")
+    @Override
+    public void onNotificationsEnabled() {
+        binding.tvScannerInfo.setText("Connected to "+MainActivity.BleDeviceName+" and notification enabled");
+        MainActivity.NotifyEnabled = true;
+    }
+
     /**
      * Creates an IntentFilter for GATT update actions.
      *
@@ -338,6 +351,7 @@ public class ConnectFragment extends Fragment implements GattUpdateReceiver.Gatt
         intentFilter.addAction(BleActivity.ACTION_GATT_DISCONNECTED);
         intentFilter.addAction(BleActivity.ACTION_GATT_SERVICES_DISCOVERED);
         intentFilter.addAction(BleActivity.ACTION_DATA_AVAILABLE);
+        intentFilter.addAction(BleActivity.ACTION_NOTIFY_ENABLED);
         return intentFilter;
     }
 

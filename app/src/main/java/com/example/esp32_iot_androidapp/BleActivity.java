@@ -20,7 +20,10 @@ import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
+
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 import java.util.UUID;
 
 
@@ -35,6 +38,7 @@ public class BleActivity extends Service {
     private final static String TAG = BleActivity.class.getSimpleName();
 
     public static final int STATE_DISCONNECTED = 0;
+    public static int counter_notify = 0;
     public static final int STATE_CONNECTING = 1;
     public static final int STATE_CONNECTED = 2;
 
@@ -43,13 +47,15 @@ public class BleActivity extends Service {
     public final static String ACTION_GATT_SERVICES_DISCOVERED = "com.example.sentimentalise.ACTION_GATT_SERVICES_DISCOVERED";
     public final static String ACTION_DATA_AVAILABLE = "com.example.sentimentalise.ACTION_DATA_AVAILABLE";
     public final static String ACTION_SEND_DATA = "com.example.sentimentalise.ACTION_SEND_DATA";
+    public final static String ACTION_NOTIFY_ENABLED = "com.example.sentimentalise.ACTION_NOTIFY_ENABLED";
     public final static String EXTRA_DATA = "com.example.sentimentalise.EXTRA_DATA";
 
     public final static UUID UUID_IOT_HUM_CH = UUID.fromString(Esp32GattAttributes.HUM_CH);
     public final static UUID UUID_IOT_TEMP_CH = UUID.fromString(Esp32GattAttributes.TEMP_CH);
     public final static UUID UUID_IOT_SLRAD_CH = UUID.fromString(Esp32GattAttributes.SLRAD_CH);
     public static final UUID CCCD_UUID = UUID.fromString(Esp32GattAttributes.CCCD);
-
+    private final Queue<Runnable> bleOperationQueue = new LinkedList<>();
+    private boolean isExecutingBleOperation = false;
     /**
      * BroadcastReceiver that listens for bonding (pairing) state changes.
      * This is necessary to handle the pairing process with a BLE device.
@@ -63,7 +69,6 @@ public class BleActivity extends Service {
         @Override
         public void onReceive(Context context, Intent intent) {
             final String action = intent.getAction();
-
             if (action.equals(BluetoothDevice.ACTION_BOND_STATE_CHANGED)) {
                 final int state = intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, BluetoothDevice.ERROR);
 
@@ -82,6 +87,41 @@ public class BleActivity extends Service {
             }
         }
     };
+
+
+    /**
+     * Adds a BLE operation to the queue.
+     * @param operation The operation to be executed.
+     */
+    private synchronized void enqueueBleOperation(Runnable operation) {
+        bleOperationQueue.add(operation);
+        if (!isExecutingBleOperation) {
+            executeNextBleOperation();
+        }
+    }
+
+    /**
+     * Executes the next BLE operation in the queue.
+     */
+    private synchronized void executeNextBleOperation() {
+        if (isExecutingBleOperation || bleOperationQueue.isEmpty()) {
+            return;
+        }
+        isExecutingBleOperation = true;
+        Runnable operation = bleOperationQueue.poll();
+        if (operation != null) {
+            operation.run();
+        }
+    }
+    /**
+     * Signals that the current BLE operation has finished and the next one can be executed.
+     * This should be called from the GATT callbacks.
+     */
+    private synchronized void signalBleOperationCompleted() {
+        isExecutingBleOperation = false;
+        executeNextBleOperation();
+    }
+
 
 
     /**
@@ -129,6 +169,7 @@ public class BleActivity extends Service {
 
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 BleConnectionState = STATE_DISCONNECTED;
+                counter_notify = 0;
                 disconnect();
                 close();
                 Log.i(TAG, "Disconnected from GATT server.");
@@ -186,6 +227,21 @@ public class BleActivity extends Service {
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
             broadcastUpdate(ACTION_DATA_AVAILABLE, characteristic);
+        }
+        @Override
+        public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
+            super.onDescriptorWrite(gatt, descriptor, status);
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                counter_notify ++;
+                if (counter_notify == 3){
+                    broadcastUpdate(ACTION_NOTIFY_ENABLED);
+                }
+                Log.d(TAG, "Descriptor write successful for " + descriptor.getUuid());
+            } else {
+                Log.w(TAG, "Descriptor write failed with status: " + status);
+            }
+            // IMPORTANT: Signal that the operation is complete to unblock the queue
+            signalBleOperationCompleted();
         }
     };
 
@@ -421,8 +477,11 @@ public class BleActivity extends Service {
             } else {
                 value = BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE;
             }
-            descriptor.setValue(value);
-            mBluetoothGatt.writeDescriptor(descriptor);
+            // Enqueue the write operation
+            enqueueBleOperation(() -> {
+                descriptor.setValue(value);
+                mBluetoothGatt.writeDescriptor(descriptor);
+            });
         }
     }
 
